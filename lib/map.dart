@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:math';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,8 @@ class CartePage extends StatefulWidget {
 class CarteState extends State<CartePage> {
   List<Carte> stations = [];
   List<Marker> marqueurs = [];
+  LatLngBounds zone = new LatLngBounds(LatLng(40, 0), LatLng(40, 0));
+  MapController _controller = MapController();
 
   Future<void> getData() async {
     var response = await http.get(Uri.parse(
@@ -51,6 +54,16 @@ class CarteState extends State<CartePage> {
             .map((obj) => Carte.fromJson(obj))
             .toList();
         marqueurs = stations.map((e) => e.mq).toList();
+        List<double> tabLng = stations.map((e) => e.lng).toList();
+        List<double> tabLat = stations.map((e) => e.lat).toList();
+
+        double minLat = tabLat.reduce(min);
+        double maxLat = tabLat.reduce(max);
+        double minLng = tabLng.reduce(min);
+        double maxLng = tabLng.reduce(max);
+
+        zone = new LatLngBounds(LatLng(maxLat, minLng), LatLng(minLat, maxLng));
+        _controller.fitBounds(zone);
       });
     }
   }
@@ -73,9 +86,10 @@ class CarteState extends State<CartePage> {
         ),
         drawer: Menu(context),
         body: FlutterMap(
+          mapController: _controller,
           options: MapOptions(
-            center: LatLng(48, 6.9),
-            zoom: 10.0,
+            bounds: zone,
+            zoom: 10,
           ),
           layers: [
             TileLayerOptions(
